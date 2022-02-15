@@ -10,7 +10,8 @@ This is based on the official [Streetlights](https://www.asyncapi.com/docs/tutor
 
 - [AsyncAPI Generator](https://github.com/asyncapi/generator/) (`ag`)
   - Used `pnpm install -g @asyncapi/generator` that installed ver. 1.9.0 (available at the time of this writing).
-
+- A local instance of RabbitMQ with.
+  - To quickly start it, use `docker run -d -p 15672:15672 -p 5672:5672 rabbitmq:3-management`
 
 
 <br/>
@@ -19,9 +20,10 @@ This is based on the official [Streetlights](https://www.asyncapi.com/docs/tutor
 
 The following steps were performed:
 
-1. Created `asyncapi.yaml` spec file.
+1. Created the specification (`asyncapi.yaml` file).
    
 2. Generated the Go code using `ag asyncapi.yaml @asyncapi/go-watermill-template -o goapp -p moduleName=github.com/dxps/asyncapi_playground/streetlights_go/goapp`
+   Used `--debug` here just for more verbosity.
    ```shell
    ❯ ag --debug asyncapi.yaml @asyncapi/go-watermill-template -o goapp -p moduleName=github.com/dxps/asyncapi_playground/streetlights_go/goapp
     Unable to resolve template location at undefined. Package is not available locally. Error: Cannot find module '@asyncapi/go-watermill-template/package.json'
@@ -54,15 +56,11 @@ The following steps were performed:
 3. Go app start
     ```shell
     ❯ cd goapp
-    ❯ // Added this manually, as `go.mod` was not generated, only `go.sum`.
-    ❯ go mod init github.com/dxps/asyncapi_playground/streetlights_go/goapp
     ❯ go mod tidy
-    ❯
-    ❯
-    ❯
+    ❯ go run main.go
     ```
 
-1. mm
+4. mm
 
 
 <br/>

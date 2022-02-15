@@ -14,7 +14,7 @@ defaultContentType: application/json
 
 servers:
   local:
-    url: localhost:5672
+    url: localhost:15672
     protocol: amqp
     security:
       - user-password: []
