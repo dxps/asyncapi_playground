@@ -2,7 +2,19 @@
 
 This is based on the official [Streetlights](https://www.asyncapi.com/docs/tutorials/streetlights) tutorial, but it uses Go instead of Node.js.
 
+The setup is minimal:
+- a RabbitMQ instance that talks AMQP protocol
+- an AsyncAPI spec file that generates the Go app through AsyncAPI Generator
+- the generated Go app subscribes to an "exchange" (part of RabbitMQ messaging model)
+- a publisher (simple curl as client to RabbitMQ's API)
+```
+  .-----------.         .-----------------.          .--------------.
+  | Publisher |         |   AMQP Broker   |          | Subscriber   |
+  |  (curl)   |-------->|    (RabbitMQ)   |--------->|  (Go app)    |
+  '-----------'         '-----------------'          '--------------'
+```
 
+(1) I'd say a subscription should happen to topic, not a queue, but that's the terminology used 
 
 <br/>
 
@@ -20,9 +32,18 @@ This is based on the official [Streetlights](https://www.asyncapi.com/docs/tutor
 
 The following steps were performed:
 
-1. Created the specification (`asyncapi.yaml` file).
+1. Created the queue.
+   - Through RabbitMQ's API, `light/measured` queue has been created using cURL:<br/>
+     ```shell
+     curl --user guest:guest -X PUT http://localhost:15672/api/queues/%2f/light%2fmeasured \
+          -H 'content-type: application/json' -d '{"auto_delete":false, "durable":true}'
+     ```
+     Going to RabbitMQ's [Mgmt UI](http://localhost:15672/), you can verify that the queue is already there.<br/>
+     Note that the forward slash (`/`) character, part of `light/measured` queue name, has been URL encoded as `%2f`.<br/>
    
-2. Generated the Go code using `ag asyncapi.yaml @asyncapi/go-watermill-template -o goapp -p moduleName=github.com/dxps/asyncapi_playground/streetlights_go/goapp`
+2. Created the specification (`asyncapi.yaml` file).
+   
+3. Generated the Go code using `ag asyncapi.yaml @asyncapi/go-watermill-template -o goapp -p moduleName=github.com/dxps/asyncapi_playground/streetlights_go/goapp` <br/>
    Used `--debug` here just for more verbosity.
    ```shell
    ❯ ag --debug asyncapi.yaml @asyncapi/go-watermill-template -o goapp -p moduleName=github.com/dxps/asyncapi_playground/streetlights_go/goapp
@@ -53,14 +74,37 @@ The following steps were performed:
     ❯
    ```
 
-3. Go app start
+4. Started the generated Go app.
     ```shell
     ❯ cd goapp
     ❯ go mod tidy
     ❯ go run main.go
     ```
+    The app startup should look like this:
+    ```shell
+    ❯ go run main.go 
+    [watermill] 2022/02/16 09:55:17.943214 connection.go:98: 	level=INFO  msg="Connected to AMQP" 
+    [watermill] 2022/02/16 09:55:17.943297 router.go:231: 	level=INFO  msg="Adding handler" handler_name=OnLightMeasured topic=light/measured 
+    [watermill] 2022/02/16 09:55:17.944593 router.go:453: 	level=INFO  msg="Starting handler" subscriber_name=OnLightMeasured topic=light/measured 
+    [watermill] 2022/02/16 09:55:17.945158 subscriber.go:166: 	level=INFO  msg="Starting consuming from AMQP channel" amqp_exchange_name= amqp_queue_name=light/measured topic=light/measured 
 
-4. mm
+    ```
+
+5. Published a message to the queue.<br/>
+   ```shell
+   curl --user guest:guest -X POST http://localhost:15672/api/exchanges/%2f/amq.default/publish \
+   -H 'content-type: application/json' \
+   -d ' {
+          "properties":{},
+          "routing_key":"light/measured",
+          "payload":"{ \"id\":1, \"lumens\":2, \"sentAt\": \"2022-02-16\" }",
+          "payload_encoding":"string"
+        }'
+   ```
+6. And the app should get the message and print to the output:
+   ```
+   2022/02/16 09:58:52 received message payload: { "id":1, "lumens":2, "sentAt": "2022-02-16" }
+   ```
 
 
 <br/>
