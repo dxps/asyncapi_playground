@@ -14,7 +14,6 @@ The setup is minimal:
   '-----------'         '-----------------'          '--------------'
 ```
 
-(1) I'd say a subscription should happen to topic, not a queue, but that's the terminology used 
 
 <br/>
 
@@ -90,7 +89,7 @@ The following steps were performed:
 
     ```
 
-5. Published a message to the queue.<br/>
+5. Published a message to the exchange.<br/>
    ```shell
    curl --user guest:guest -X POST http://localhost:15672/api/exchanges/%2f/amq.default/publish \
    -H 'content-type: application/json' \
