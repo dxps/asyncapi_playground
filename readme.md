@@ -4,7 +4,7 @@ This is a space for experiments around [AsyncAPI](https://asyncapi.com) initiati
 
 | item | description |
 | ---- | ----------- |
-| [streetlights_go](./streetlights_go/) | A nice and simple setup of Streetlights tutorial using Go. |
+| [streetlights_go](./streetlights_go/readme.md) | A nice and simple setup of Streetlights tutorial using Go. |
 
 
 <br/>
