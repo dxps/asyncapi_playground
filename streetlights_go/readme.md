@@ -2,15 +2,19 @@
 
 This is based on the official [Streetlights](https://www.asyncapi.com/docs/tutorials/streetlights) tutorial, but it uses Go instead of Node.js.
 
-The setup is minimal:
-- a RabbitMQ instance that talks AMQP protocol
-- an AsyncAPI spec file that generates the Go app through AsyncAPI Generator
-- the generated Go app subscribes to an "exchange" (part of RabbitMQ messaging model)
-- a publisher (simple curl as client to RabbitMQ's API)
+The setup is minimal, consisting of:
+- A RabbitMQ instance
+  - A popular message broker that talks AMQP protocol.
+- An AsyncAPI spec file
+  - Using this and AsyncAPI Generator, a Go app is generated.
+  - Generated Go app plays the role of an event subscriber,<br/>
+    subscribing to a topic and consuming the events that are published there.
+- An event publisher
+  - A simple cURL (as client to RabbitMQ's HTTP API) is used.
 ```
   .-----------.         .-----------------.          .--------------.
-  | Publisher |         |   AMQP Broker   |          | Subscriber   |
-  |  (curl)   |-------->|    (RabbitMQ)   |--------->|  (Go app)    |
+  | Publisher |         |   AMQP Broker   |          |  Subscriber  |
+  |  (curl)   |-------->|    (RabbitMQ)   |--------->|   (Go app)   |
   '-----------'         '-----------------'          '--------------'
 ```
 
@@ -19,9 +23,10 @@ The setup is minimal:
 
 ### Prereqs
 
-- [AsyncAPI Generator](https://github.com/asyncapi/generator/) (`ag`)
-  - Used `pnpm install -g @asyncapi/generator` that installed ver. 1.9.0 (available at the time of this writing).
-- A local instance of RabbitMQ with.
+- [AsyncAPI Generator](https://github.com/asyncapi/generator/) (`ag`) tool
+  - Use `pnpm install -g @asyncapi/generator` (or `npm`, if you prefer) to install it.
+    - Ver. 1.9.0 was used (aavailable at the time of this writing).
+- A local running RabbitMQ instance.
   - To quickly start it, use `docker run -d -p 15672:15672 -p 5672:5672 rabbitmq:3-management`
 
 
@@ -32,7 +37,7 @@ The setup is minimal:
 The following steps were performed:
 
 1. Created the queue.
-   - Through RabbitMQ's API, `light/measured` queue has been created using cURL:<br/>
+   - Through RabbitMQ's HTTP API, `light/measured` queue has been created using cURL:<br/>
      ```shell
      curl --user guest:guest -X PUT http://localhost:15672/api/queues/%2f/light%2fmeasured \
           -H 'content-type: application/json' -d '{"auto_delete":false, "durable":true}'
@@ -51,14 +56,7 @@ The following steps were performed:
     - /home/dxps/apps/node/lib/node_modules/noop.js
         at Function.Module._resolveFilename (internal/modules/cjs/loader.js:902:15)
         at resolveFileName (/home/dxps/apps/node/pnpm-global/5/node_modules/.pnpm/@asyncapi+generator@1.9.0/node_modules/@asyncapi/generator/node_modules/resolve-from/index.js:29:39)
-        at resolveFrom (/home/dxps/apps/node/pnpm-global/5/node_modules/.pnpm/@asyncapi+generator@1.9.0/node_modules/@asyncapi/generator/node_modules/resolve-from/index.js:43:9)
-        at module.exports (/home/dxps/apps/node/pnpm-global/5/node_modules/.pnpm/@asyncapi+generator@1.9.0/node_modules/@asyncapi/generator/node_modules/resolve-from/index.js:46:47)
-        at utils.getTemplateDetails (/home/dxps/apps/node/pnpm-global/5/node_modules/.pnpm/@asyncapi+generator@1.9.0/node_modules/@asyncapi/generator/lib/utils.js:190:30)
-        at /home/dxps/apps/node/pnpm-global/5/node_modules/.pnpm/@asyncapi+generator@1.9.0/node_modules/@asyncapi/generator/lib/generator.js:367:26
-        at new Promise (<anonymous>)
-        at Generator.installTemplate (/home/dxps/apps/node/pnpm-global/5/node_modules/.pnpm/@asyncapi+generator@1.9.0/node_modules/@asyncapi/generator/lib/generator.js:360:12)
-        at Generator.generate (/home/dxps/apps/node/pnpm-global/5/node_modules/.pnpm/@asyncapi+generator@1.9.0/node_modules/@asyncapi/generator/lib/generator.js:180:73)
-        at processTicksAndRejections (internal/process/task_queues.js:95:5)
+        ...
         at /home/dxps/apps/node/pnpm-global/5/node_modules/.pnpm/@asyncapi+generator@1.9.0/node_modules/@asyncapi/generator/cli.js:154:9 {
     code: 'MODULE_NOT_FOUND',
     requireStack: [ '/home/dxps/apps/node/lib/node_modules/noop.js' ]
@@ -89,7 +87,10 @@ The following steps were performed:
 
     ```
 
-5. Published a message to the exchange.<br/>
+5. Published a message
+   - to the default exchange
+   - using `routing_key` with the same name as the previously created queue,<br/>
+    based on which the message is routed to that queue.
    ```shell
    curl --user guest:guest -X POST http://localhost:15672/api/exchanges/%2f/amq.default/publish \
    -H 'content-type: application/json' \
@@ -100,7 +101,7 @@ The following steps were performed:
           "payload_encoding":"string"
         }'
    ```
-6. And the app should get the message and print to the output:
+6. And the Go app should get the message, and as part of the consumption it prints to the standard output:
    ```
    2022/02/16 09:58:52 received message payload: { "id":1, "lumens":2, "sentAt": "2022-02-16" }
    ```
